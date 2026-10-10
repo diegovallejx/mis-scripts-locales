@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mis scripts locales</title>
+  <link rel="stylesheet" href="gestor.css">
+</head>
+<body>
+  <main class="contenedor">
+    <header class="cabecera">
+      <div class="identidad">
+        <span class="icono-app" aria-hidden="true">{ }</span>
+        <div>
+          <p class="etiqueta">EN ESTE EQUIPO</p>
+          <h1>Mis scripts</h1>
+          <p class="subtitulo">Carga, revisa y controla tus scripts.</p>
+        </div>
+      </div>
+      <button id="cargar" class="boton principal" type="button">+ Cargar script</button>
+      <input id="archivo" type="file" accept=".js,.user.js,text/javascript" hidden>
+    </header>
+
+    <div id="aviso" class="aviso" role="status" aria-live="polite" hidden></div>
+
+    <section class="panel-privacidad" aria-labelledby="titulo-privacidad">
+      <div class="panel-privacidad-icono" aria-hidden="true">✓</div>
+      <div class="panel-privacidad-contenido">
+        <p class="etiqueta">PRIVACIDAD Y CONTROL</p>
+        <h2 id="titulo-privacidad">Tus scripts, en tu equipo</h2>
+        <p>El gestor guarda localmente los scripts que eliges y su configuración. No incorpora telemetría ni envía el contenido de las páginas a servidores propios o de terceros.</p>
+        <p class="panel-privacidad-nota">Cada script se ejecuta en los sitios que autorizas y puede leer la página o conectarse a la red según su propio código. Revísalo antes de activarlo.</p>
+      </div>
+    </section>
+
+    <section class="informacion" aria-label="Privacidad y permisos">
+      <div><span class="punto" aria-hidden="true"></span><strong>Control local.</strong> Tú eliges qué scripts cargar y activar.</div>
+      <div><strong>Antes de activar:</strong> revisa el código. Cada script puede leer la página y conectarse a la red.</div>
+    </section>
+
+    <div class="columnas">
+      <section aria-labelledby="titulo-lista">
+        <div class="titulo-seccion">
+          <h2 id="titulo-lista">Scripts cargados</h2>
+          <span id="contador" class="contador">0</span>
+        </div>
+        <div id="lista" class="lista"></div>
+      </section>
+
+      <section class="detalle" aria-label="Detalle del script">
+        <div id="sin-seleccion" class="sin-seleccion">
+          <div class="simbolo">{ }</div>
+          <h2 id="titulo-detalle">Revisa el código</h2>
+          <p>Selecciona un script para ver sus sitios, sus permisos y todo su contenido.</p>
+        </div>
+        <div id="contenido-detalle" hidden>
+          <div class="titulo-seccion">
+            <div>
+              <p class="etiqueta">CÓDIGO LOCAL</p>
+              <h2 id="nombre-detalle"></h2>
+            </div>
+            <span id="estado-detalle" class="estado"></span>
+          </div>
+          <p id="descripcion-detalle" class="descripcion"></p>
+          <div class="acciones">
+            <button id="activar" class="boton principal" type="button"></button>
+            <button id="eliminar" class="boton secundario" type="button">Eliminar</button>
+          </div>
+          <details id="sitios-desplegable" class="sitios-desplegable">
+            <summary>
+              <span id="numero-sitios"></span>
+              <span class="pista-cerrada">Ver direcciones</span>
+              <span class="pista-abierta">Ocultar direcciones</span>
+            </summary>
+            <ul id="sitios-detalle" class="sitios"></ul>
+          </details>
+          <div class="titulo-codigo">
+            <h3>Código completo</h3>
+            <span id="tamano-detalle"></span>
+          </div>
+          <textarea id="codigo-detalle" readonly spellcheck="false" aria-label="Código completo del script"></textarea>
+        </div>
+      </section>
+    </div>
+    <footer>
+      <p>Los scripts permanecen en el almacenamiento local de Chrome. El gestor no descarga ni actualiza scripts automáticamente.</p>
+      <nav aria-label="Información del proyecto">
+        <a href="https://github.com/diegovallejx/mis-scripts-locales" target="_blank" rel="noopener noreferrer">Código abierto</a>
+        <a href="https://github.com/diegovallejx/mis-scripts-locales/blob/main/PRIVACIDAD.md" target="_blank" rel="noopener noreferrer">Privacidad</a>
+      </nav>
+    </footer>
+  </main>
+  <script src="comun.js"></script>
+  <script src="gestor.js"></script>
+</body>
+</html>
