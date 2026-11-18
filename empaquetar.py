@@ -6,7 +6,7 @@ import zipfile
 
 RAIZ = Path(__file__).resolve().parent
 ARCHIVOS = (
-    "manifest.json", "comun.js", "fondo.js", "gestor.js", "gestor.html",
+    "manifest.json", "comun.js", "ota.js", "fondo.js", "gestor.js", "gestor.html",
     "gestor.css", "iconos/icono-16.png", "iconos/icono-48.png",
     "iconos/icono-128.png", "LICENSE",
 )

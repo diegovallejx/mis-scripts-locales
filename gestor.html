@@ -19,6 +19,7 @@
       </div>
       <button id="cargar" class="boton principal" type="button">+ Cargar script</button>
       <input id="archivo" type="file" accept=".js,.user.js,text/javascript" hidden>
+      <input id="archivo-actualizacion" type="file" accept=".js,.user.js,text/javascript" hidden>
     </header>
 
     <div id="aviso" class="aviso" role="status" aria-live="polite" hidden></div>
@@ -64,8 +65,24 @@
           <p id="descripcion-detalle" class="descripcion"></p>
           <div class="acciones">
             <button id="activar" class="boton principal" type="button"></button>
+            <button id="actualizar" class="boton neutro" type="button">Actualizar desde archivo</button>
             <button id="eliminar" class="boton secundario" type="button">Eliminar</button>
           </div>
+          <details id="actualizaciones-remotas" class="sitios-desplegable">
+            <summary>Actualizaciones por internet <span class="pista-cerrada">Configurar</span></summary>
+            <div class="configuracion-ota">
+              <label for="fuente-actualizacion">Fuente HTTPS del archivo .user.js</label>
+              <input id="fuente-actualizacion" type="url" autocomplete="off" spellcheck="false" aria-describedby="nota-actualizacion" placeholder="https://sitio.del.autor/script.user.js">
+              <p id="nota-actualizacion" class="descripcion">Guarda una fuente de confianza. Solo se consulta al pulsar «Buscar actualización». Revisarás el código antes de instalar. El servidor ve tu IP y la petición habitual; no enviamos scripts ni datos de páginas.</p>
+              <p id="estado-fuente" class="descripcion"></p>
+              <div class="acciones">
+                <button id="guardar-fuente" class="boton neutro" type="button">Guardar fuente</button>
+                <button id="buscar-actualizacion" class="boton principal" type="button">Buscar actualización</button>
+                <button id="olvidar-fuente" class="boton neutro" type="button">Olvidar fuente</button>
+                <button id="cancelar-consulta" class="boton neutro" type="button" hidden>Cancelar consulta</button>
+              </div>
+            </div>
+          </details>
           <details id="sitios-desplegable" class="sitios-desplegable">
             <summary>
               <span id="numero-sitios"></span>
@@ -90,7 +107,26 @@
       </nav>
     </footer>
   </main>
+  <dialog id="revision" class="revision" aria-labelledby="titulo-revision" aria-describedby="resumen-revision">
+    <p class="etiqueta">REVISIÓN LOCAL</p>
+    <h2 id="titulo-revision" tabindex="-1">Revisar actualización</h2>
+    <p id="resumen-revision"></p>
+    <p id="estado-revision" class="descripcion"></p>
+    <div class="comparacion">
+      <div><h3>Archivo actual</h3><ul id="sitios-anteriores" class="sitios"></ul>
+        <textarea id="codigo-anterior" readonly spellcheck="false" aria-label="Código actual"></textarea></div>
+      <div><h3>Archivo nuevo</h3><ul id="sitios-nuevos" class="sitios"></ul>
+        <textarea id="codigo-nuevo" readonly spellcheck="false" aria-label="Código nuevo"></textarea></div>
+    </div>
+    <p id="error-revision" class="aviso error" role="alert" hidden></p>
+    <div class="acciones">
+      <button id="confirmar-actualizacion" class="boton principal" type="button">Confirmar actualización</button>
+      <button id="importar-copia" class="boton neutro" type="button" hidden>Importar una copia</button>
+      <button id="cancelar-revision" class="boton neutro" type="button">Cancelar</button>
+    </div>
+  </dialog>
   <script src="comun.js"></script>
+  <script src="ota.js"></script>
   <script src="gestor.js"></script>
 </body>
 </html>

@@ -50,6 +50,8 @@ const GestorScripts = (() => {
     if (!momentos[momento]) throw new Error(`Momento no admitido: ${momento}`);
     return {
       nombre,
+      espacioNombres: datos.namespace?.[0] || '',
+      urlDescarga: datos.downloadurl?.[0] || '',
       version: datos.version?.[0] || '',
       descripcion: datos.description?.[0] || '',
       sitios,
@@ -95,6 +97,61 @@ const GestorScripts = (() => {
     await chrome.storage.local.set({ [CLAVE]: scripts });
   }
 
+  function coincidencias(scripts, datos) {
+    return scripts.filter(script => {
+      try {
+        const anterior = analizar(script.codigo);
+        return anterior.nombre === datos.nombre && anterior.espacioNombres === datos.espacioNombres;
+      } catch {
+        return false;
+      }
+    });
+  }
+
+  function mismosSitios(anterior, nuevo) {
+    return anterior.sitios.length === nuevo.sitios.length &&
+      anterior.sitios.every(sitio => nuevo.sitios.includes(sitio));
+  }
+
+  async function actualizar(anterior, codigo) {
+    const datos = analizar(codigo);
+    const scripts = await leer();
+    const vigente = scripts.find(script => script.id === anterior.id);
+    if (!vigente || vigente.codigo !== anterior.codigo || vigente.activo !== anterior.activo ||
+        vigente.fuenteActualizacion !== anterior.fuenteActualizacion) {
+      throw new Error('El script cambió o fue eliminado en otra ventana. Vuelve a cargar el gestor y revisa la actualización.');
+    }
+    const datosAnteriores = analizar(vigente.codigo);
+    const nuevo = { ...vigente, ...datos, codigo, activo: false };
+    let registroAnterior = null;
+    if (vigente.activo) {
+      // No reactivar automáticamente un script cuyo registro ya no exista.
+      registroAnterior = (await chrome.userScripts.getScripts({ ids: [vigente.id] }))
+        .find(item => item.id === vigente.id) || null;
+      nuevo.activo = !!registroAnterior && mismosSitios(datosAnteriores, datos) &&
+        datosAnteriores.todosLosMarcos === datos.todosLosMarcos;
+    }
+    if (registroAnterior) {
+      if (nuevo.activo) await chrome.userScripts.update([registro(nuevo)]);
+      else await chrome.userScripts.unregister({ ids: [vigente.id] });
+    }
+    const siguientes = scripts.map(script => script.id === vigente.id ? nuevo : script);
+    try {
+      await guardar(siguientes);
+    } catch (error) {
+      if (registroAnterior) {
+        try {
+          if (nuevo.activo) await chrome.userScripts.update([registroAnterior]);
+          else await chrome.userScripts.register([registroAnterior]);
+        } catch {
+          throw new Error('Falló el guardado y no se pudo recuperar la ejecución anterior. Revisa el estado en Chrome y recarga o cierra las páginas afectadas.');
+        }
+      }
+      throw error;
+    }
+    return siguientes;
+  }
+
   async function restaurar() {
     await guardarAcceso();
     const instalados = await disponibles();
@@ -106,5 +163,6 @@ const GestorScripts = (() => {
     }
   }
 
-  return { analizar, permisos, registro, disponibles, guardarAcceso, leer, guardar, restaurar };
+  return { analizar, permisos, registro, disponibles, guardarAcceso, leer, guardar, restaurar,
+    coincidencias, mismosSitios, actualizar };
 })();

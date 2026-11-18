@@ -70,3 +70,88 @@ test('restaura solo los scripts activos que faltan tras una actualización', asy
   await gestor.restaurar();
   assert.deepEqual(registrados.map(item => item.id), ['script-activo']);
 });
+
+function entornoActualizacion(activo = false) {
+  const anterior = { id: 'script-prueba', ...gestor.analizar(ejemplo), codigo: ejemplo, activo };
+  let almacenados = [anterior];
+  const registros = new Map(activo ? [[anterior.id, gestor.registro(anterior)]] : []);
+  const entorno = vm.createContext({ TextEncoder, chrome: {
+    storage: { local: {
+      get: async () => ({ scripts: almacenados }),
+      set: async datos => { almacenados = datos.scripts; }
+    } },
+    userScripts: {
+      getScripts: async () => [...registros.values()],
+      update: async items => items.forEach(item => registros.set(item.id, item)),
+      register: async items => items.forEach(item => registros.set(item.id, item)),
+      unregister: async ({ ids }) => ids.forEach(id => registros.delete(id))
+    }
+  } });
+  vm.runInContext(fuente + '\nthis.gestor = GestorScripts;', entorno);
+  return { anterior, entorno, gestor: entorno.gestor, registros, almacenados: () => almacenados };
+}
+
+test('detecta duplicados por nombre y namespace incluso en scripts antiguos', () => {
+  const codigo = ejemplo.replace('// @version', '// @namespace urn:ejemplo:local\n// @version');
+  const anterior = { id: 'script-antiguo', codigo };
+  const datos = gestor.analizar(codigo.replace('1.0', '2.0'));
+  assert.equal(datos.espacioNombres, 'urn:ejemplo:local');
+  assert.equal(gestor.coincidencias([anterior], datos)[0].id, anterior.id);
+  assert.equal(gestor.coincidencias([anterior], gestor.analizar(ejemplo)).length, 0);
+});
+
+test('reemplaza sin duplicar y admite cambios con la misma versión', async () => {
+  const e = entornoActualizacion();
+  const codigo = ejemplo.replace("'lista'", "'actualizada'");
+  await e.gestor.actualizar(e.anterior, codigo);
+  assert.equal(e.almacenados().length, 1);
+  assert.equal(e.almacenados()[0].id, e.anterior.id);
+  assert.equal(e.almacenados()[0].codigo, codigo);
+  assert.equal(e.almacenados()[0].activo, false);
+  assert.equal(e.registros.size, 0);
+});
+
+test('mantiene activo el script actualizado con los mismos sitios', async () => {
+  const e = entornoActualizacion(true);
+  const codigo = ejemplo.replace('1.0', '2.0');
+  await e.gestor.actualizar(e.anterior, codigo);
+  assert.equal(e.almacenados()[0].activo, true);
+  assert.equal(e.registros.get(e.anterior.id).js[0].code, codigo);
+});
+
+test('un cambio de sitios deja la actualización inactiva sin solicitar permisos', async () => {
+  const e = entornoActualizacion(true);
+  await e.gestor.actualizar(e.anterior, ejemplo.replace('example.com', 'otro.example.org'));
+  assert.equal(e.almacenados()[0].activo, false);
+  assert.equal(e.registros.size, 0);
+});
+
+test('si falla el guardado recupera el código activo anterior', async () => {
+  const e = entornoActualizacion(true);
+  e.entorno.chrome.storage.local.set = async () => { throw new Error('Fallo sintético'); };
+  await assert.rejects(e.gestor.actualizar(e.anterior, ejemplo.replace('1.0', '2.0')), /Fallo sintético/);
+  assert.equal(e.almacenados()[0].codigo, ejemplo);
+  assert.equal(e.registros.get(e.anterior.id).js[0].code, ejemplo);
+});
+
+test('si falla el registro no reemplaza el archivo almacenado', async () => {
+  const e = entornoActualizacion(true);
+  e.entorno.chrome.userScripts.update = async () => { throw new Error('Registro rechazado'); };
+  await assert.rejects(e.gestor.actualizar(e.anterior, ejemplo.replace('1.0', '2.0')), /Registro rechazado/);
+  assert.equal(e.almacenados()[0].codigo, ejemplo);
+});
+
+test('permite actualizar inactivos cuando la API de ejecución no está habilitada', async () => {
+  const e = entornoActualizacion();
+  e.entorno.chrome.userScripts = undefined;
+  await e.gestor.actualizar(e.anterior, ejemplo.replace('1.0', '2.0'));
+  assert.equal(e.almacenados()[0].version, '2.0');
+});
+
+test('rechaza una revisión obsoleta y archivos incompatibles sin alterar lo guardado', async () => {
+  const e = entornoActualizacion();
+  await assert.rejects(e.gestor.actualizar(e.anterior, 'sin cabecera'), /cabecera/);
+  await e.entorno.chrome.storage.local.set({ scripts: [] });
+  await assert.rejects(e.gestor.actualizar(e.anterior, ejemplo), /cambió|eliminado/);
+  assert.equal(e.almacenados().length, 0);
+});
